@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Routines - Listening Game</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --correct: #10b981;
+            --correct-light: #d1fae5;
+            --wrong: #ef4444;
+            --wrong-light: #fee2e2;
+            --badge-bg: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            background-color: transparent;
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 { margin-top: 0; color: var(--primary); font-size: 28px; }
+        h2 { color: var(--text-main); font-size: 22px; margin-bottom: 25px; font-weight: 700; }
+
+        .hidden { display: none !important; }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+            margin-top: 20px;
+            width: 100%;
+        }
+        .btn:hover { 
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        #score-board {
+            font-weight: 700;
+            font-size: 16px;
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        #question-counter {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        /* Audio Section */
+        #audio-section {
+            margin: 0 0 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 2px dashed #cbd5e1;
+        }
+        
+        #audio-section p { margin-top: 0; color: var(--text-muted); font-weight: 500; }
+        audio { width: 100%; outline: none; border-radius: 8px; }
+
+        /* Question Area */
+        #question-text {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 25px 0;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            padding: 12px 16px;
+            font-size: 17px;
+            font-weight: 500;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: left;
+            color: var(--text-main);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background-color: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .option-badge {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 36px;
+            height: 36px;
+            background-color: var(--badge-bg);
+            color: var(--text-muted);
+            border-radius: 10px;
+            font-weight: 700;
+            margin-right: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:disabled { cursor: default; }
+        
+        /* Correct / Wrong States */
+        .option-btn.correct { 
+            background-color: var(--correct-light); 
+            border-color: var(--correct); 
+            color: #064e3b;
+        }
+        .option-btn.correct .option-badge {
+            background-color: var(--correct);
+            color: white;
+        }
+
+        .option-btn.wrong { 
+            background-color: var(--wrong-light); 
+            border-color: var(--wrong); 
+            color: #7f1d1d;
+        }
+        .option-btn.wrong .option-badge {
+            background-color: var(--wrong);
+            color: white;
+        }
+
+        /* Feedback Animation */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            50% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        #feedback-message {
+            margin-top: 25px;
+            font-weight: 700;
+            font-size: 18px;
+            min-height: 27px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .animate-pop {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        #next-btn { margin-top: 15px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="card">
+            <div style="font-size: 48px; margin-bottom: 10px;">🎧</div>
+            <h1>Listening Quiz</h1>
+            <p style="color: var(--text-muted); font-size: 18px; line-height: 1.5;">Listen to the routines carefully and choose the correct answers. Pay attention to the details!</p>
+            <button class="btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="card hidden">
+            <div class="top-bar">
+                <div id="question-counter">Question: <span id="q-count">1</span>/3</div>
+                <div id="score-board">Score: <span id="score">0</span></div>
+            </div>
+
+            <h2 id="character-title">İlkay's Routine</h2>
+            
+            <div id="audio-section">
+                <p>Listen to the audio first:</p>
+                <audio id="player" controls controlsList="nodownload">
+                    <source id="audio-source" src="" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+
+            <div id="question-area">
+                <div id="question-text">Question goes here...</div>
+                <div class="options-grid" id="options-container">
+                    <!-- Seçenekler JS ile gelecek -->
+                </div>
+                <div id="feedback-message"></div>
+                <button id="next-btn" class="btn hidden" onclick="nextQuestion()">Continue</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="card hidden">
+            <div style="font-size: 56px; margin-bottom: 10px;">🎉</div>
+            <h1>Game Over!</h1>
+            <h2>Total Score: <span id="final-score">0</span> / 90</h2>
+            <p id="end-message" style="color: var(--text-muted); font-size: 18px;"></p>
+            <button class="btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const gameData = [
+            {
+                character: "İlkay",
+                audioSrc: "ilkay.mp3",
+                questions: [
+                    {
+                        q: "How does İlkay go to work?",
+                        options: ["By bus", "By train", "On foot"],
+                        answer: 1 // B şıkkı
+                    },
+                    {
+                        q: "What does İlkay do in the evening?",
+                        options: ["She watches TV", "She reads a book", "She cooks dinner and listens to music"],
+                        answer: 2 // B şıkkı
+                    },
+                    {
+                        q: "Does İlkay go to bed late?",
+                        options: ["Yes, she always goes to bed late", "No, she never goes to bed late", "Sometimes"],
+                        answer: 1 // B şıkkı
+                    }
+                ]
+            },
+            {
+                character: "Furkan",
+                audioSrc: "furkan.mp3",
+                questions: [
+                    {
+                        q: "What does Furkan do first after waking up?",
+                        options: ["Takes a shower", "Feeds his cat", "Does exercise"],
+                        answer: 1 // B şıkkı
+                    },
+                    {
+                        q: "How does Furkan go to school?",
+                        options: ["He rides his bike", "He takes the bus", "He walks"],
+                        answer: 0 // A şıkkı
+                    },
+                    {
+                        q: "What does Furkan do at night before sleeping?",
+                        options: ["Plays basketball", "Reads a comic book", "Listens to music"],
+                        answer: 1 // B şıkkı
+                    }
+                ]
+            },
+            {
+                character: "Eren",
+                audioSrc: "eren.mp3",
+                questions: [
+                    {
+                        q: "What does Eren have for breakfast?",
+                        options: ["A big breakfast", "Toast and tea", "Coffee and cake"],
+                        answer: 1 // B şıkkı
+                    },
+                    {
+                        q: "How does Eren write his homework?",
+                        options: ["Quickly but carefully", "Very slowly", "Badly"],
+                        answer: 0 // A şıkkı
+                    },
+                    {
+                        q: "Does Eren always watch a movie before bed?",
+                        options: ["Yes, always", "No, he never watches a movie", "No, he sometimes watches a movie"],
+                        answer: 2 // C şıkkı
+                    }
+                ]
+            }
+        ];
+
+        let currentSectionIndex = 0;
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const characterTitle = document.getElementById('character-title');
+        const audioPlayer = document.getElementById('player');
+        const audioSource = document.getElementById('audio-source');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const nextBtn = document.getElementById('next-btn');
+        const scoreDisplay = document.getElementById('score');
+        const qCountDisplay = document.getElementById('q-count');
+
+        const letters = ['A', 'B', 'C'];
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            loadSection();
+        }
+
+        function loadSection() {
+            currentQuestionIndex = 0;
+            const sectionData = gameData[currentSectionIndex];
+            
+            characterTitle.innerText = `${sectionData.character}'s Routine`;
+            audioSource.src = sectionData.audioSrc;
+            audioPlayer.load();
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            optionsContainer.innerHTML = '';
+            feedbackMessage.innerHTML = '';
+            feedbackMessage.className = ''; 
+            nextBtn.classList.add('hidden');
+
+            const qData = gameData[currentSectionIndex].questions[currentQuestionIndex];
+            
+            qCountDisplay.innerText = currentQuestionIndex + 1;
+            questionText.innerText = qData.q;
+
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                
+                const badge = document.createElement('div');
+                badge.className = 'option-badge';
+                badge.innerText = letters[index];
+
+                const textSpan = document.createElement('span');
+                textSpan.innerText = opt;
+
+                btn.appendChild(badge);
+                btn.appendChild(textSpan);
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, selectedBtn) {
+            const correctAnswerIndex = gameData[currentSectionIndex].questions[currentQuestionIndex].answer;
+            const allBtns = document.querySelectorAll('.option-btn');
+            
+            allBtns.forEach(btn => btn.disabled = true);
+
+            feedbackMessage.classList.add('animate-pop');
+
+            if (selectedIndex === correctAnswerIndex) {
+                selectedBtn.classList.add('correct');
+                feedbackMessage.innerHTML = "✅ Correct! +10 Points";
+                feedbackMessage.style.color = "var(--correct)";
+                score += 10;
+                scoreDisplay.innerText = score;
+            } else {
+                selectedBtn.classList.add('wrong');
+                allBtns[correctAnswerIndex].classList.add('correct');
+                feedbackMessage.innerHTML = "❌ Oops! Wrong answer.";
+                feedbackMessage.style.color = "var(--wrong)";
+            }
+
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < gameData[currentSectionIndex].questions.length) {
+                loadQuestion();
+            } else {
+                currentSectionIndex++;
+                if (currentSectionIndex < gameData.length) {
+                    loadSection();
+                } else {
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+            
+            const endMsg = document.getElementById('end-message');
+            if(score === 90) endMsg.innerText = "Perfect! You have amazing listening skills!";
+            else if(score >= 60) endMsg.innerText = "Great job! Keep practicing!";
+            else endMsg.innerText = "Good try! Listen carefully next time!";
+        }
+    </script>
+</body>
+</html>
